@@ -10,7 +10,8 @@ A premium marketplace operations portal for Fitness Species / ALK built with Nex
 - Firebase-authenticated product approval and rejection flow
 - Seller and category management views
 - Responsive admin shell with sticky top bar and sidebar
-- Prototype dashboard and non-product-management pages still use local mock data
+- Dashboard product totals and priority queue are loaded from the backend; unsupported seller totals are shown as unavailable
+- Seller, category, and other non-product-management pages remain prototype views backed by local mock data
 
 ## Quick start
 
@@ -41,7 +42,7 @@ npm run start
 Copy `.env.example` to `.env.local`, then replace the Firebase placeholders using the Web App configuration from Firebase project `sellerportal-2786c`. Do not place service-account JSON, MongoDB credentials, or backend secrets in frontend variables.
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_API_URL=https://fitness-species-backend.onrender.com
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_web_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=sellerportal-2786c.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=sellerportal-2786c
@@ -50,11 +51,11 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_project_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_web_app_id
 ```
 
-`NEXT_PUBLIC_API_URL=http://localhost:5000` is for local development when the backend is running on the same computer. Production must use the HTTPS base URL of the deployed backend (without `/api`); no deployed backend URL is configured or assumed here. Set these values in the Vercel project environment and redeploy after updates.
+`NEXT_PUBLIC_API_URL` must be the backend base URL without `/api`. For local backend development, override it with `http://localhost:5000`; production must use `https://fitness-species-backend.onrender.com`. Set the API URL and all six Firebase Web App variables in the Admin Portal's Vercel Production environment, then redeploy. These values are public frontend configuration only; never add MongoDB credentials, Firebase Admin private keys, or administrator UIDs.
 
 In Firebase Console for `sellerportal-2786c`, enable Email/Password under Authentication → Sign-in method, ensure `localhost` and `admin-portal-sepia-chi.vercel.app` are authorized domains, and create administrator accounts through the existing trusted process. Google login is not offered because its provider enablement has not been verified.
 
-The Firebase Web configuration is supplied at runtime through `.env.local`, which is ignored by Git. This checkout does not include that file or real Firebase credentials; copy `.env.example` and fill in the Web App values before testing sign-in. Without those values, the login page displays a configuration error and authentication cannot succeed.
+The Firebase Web configuration is supplied at runtime through `.env.local`, which is ignored by Git. The local configuration must use project `sellerportal-2786c`. Without the six Firebase Web App values, the login page displays a configuration error and authentication cannot succeed.
 
 ## Security notes
 
@@ -65,8 +66,8 @@ The Firebase Web configuration is supplied at runtime through `.env.local`, whic
 
 ## API readiness
 
-Product review pages call `/api/admin/products`, `/api/admin/products/:productId`, and `/api/admin/products/:productId/review`. The dashboard and non-product-management screens remain prototype views backed by local mock data; the account label only identifies the signed-in Firebase account, not its authorization status. Local API integration requires the backend process, Firebase Web App values, Firebase account, backend Firebase credentials, MongoDB connection, and an allowlisted administrator UID. The Firebase Web App configuration and real account credentials are not present in this checkout, so end-to-end authentication has not been tested.
+Product review pages call the registered `/api/admin/products?status=...`, `/api/admin/products/:productId`, and `PATCH /api/admin/products/:productId/review` routes. Review requests send `{ status: "approved" }` or `{ status: "rejected", rejectionReason }`; rejection reasons must contain 5–1000 characters. Dashboard status counts use the backend's `total` field. The backend has no admin seller-count endpoint, so Active Sellers is shown as unavailable instead of fabricated. Other non-product-management screens remain prototype views backed by local mock data.
 
-Before production use, configure the Firebase Web App variables in the portal's deployment environment and the deployed backend's Firebase credentials, `ADMIN_FIREBASE_UIDS`, MongoDB connection, and exact portal origin in `CORS_ORIGINS`. Then verify with real accounts that a trusted allowlisted administrator can review products and an authenticated non-admin receives HTTP 403. No production backend URL is configured in this checkout.
+The deployed backend currently responds healthy and reports MongoDB database `fitness_species`. Its active routes verify Firebase ID tokens against project `sellerportal-2786c` and authorize admins only through the server-side `ADMIN_FIREBASE_UIDS` allowlist. It allows the exact Seller and Admin Vercel origins and authenticated request headers. Production login and review still require working Firebase Web App values in Vercel, backend Firebase Admin credentials, and an authorized admin UID.
 
-For the deployed portal at `https://admin-portal-sepia-chi.vercel.app`, set its Firebase authorized domain as above and set `NEXT_PUBLIC_API_URL` to the actual HTTPS URL only after the backend has been deployed. Also include the exact portal origin in backend `CORS_ORIGINS`. Review page responses remain the final administrator access check.
+The currently deployed Admin Portal was checked and reports that all six Firebase configuration values are missing. Configure the six `NEXT_PUBLIC_FIREBASE_*` values from the `sellerportal-2786c` Web App and `NEXT_PUBLIC_API_URL=https://fitness-species-backend.onrender.com` in its Vercel Production environment, confirm the admin domain is authorized in Firebase Authentication, and redeploy. Then verify login with an allowlisted admin and a normal seller account; do not treat a successful login alone as admin authorization.

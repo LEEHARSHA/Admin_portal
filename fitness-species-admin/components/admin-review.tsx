@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminReviewAccess, useAdminUser } from "@/components/admin-auth";
 import {
@@ -242,6 +243,7 @@ function ProductListPage({ status }: { status: MarketplaceProduct["status"] }) {
 
 function ProductDetail({ productId }: { productId: string }) {
   const user = useAdminUser();
+  const router = useRouter();
   const [product, setProduct] = useState<MarketplaceProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -284,9 +286,10 @@ function ProductDetail({ productId }: { productId: string }) {
           }),
         },
       );
-      setProduct((current) => (
-        current ? { ...response.product, seller: current.seller } : response.product
-      ));
+      setProduct((current) => (current
+        ? { ...response.product, seller: current.seller }
+        : response.product));
+      router.replace(status === "approved" ? "/products/approved" : "/products/rejected");
     } catch (reviewError) {
       setError(reviewError instanceof Error ? reviewError.message : "Product review failed.");
     } finally {

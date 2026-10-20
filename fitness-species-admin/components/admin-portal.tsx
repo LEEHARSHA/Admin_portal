@@ -11,11 +11,11 @@ import {
   Check,
   CheckCircle2,
   FileText,
-  Filter,
   HelpCircle,
   LayoutGrid,
   Menu,
   PackageCheck,
+  RefreshCw,
   Search,
   Settings,
   ShoppingBag,
@@ -26,9 +26,14 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useAdminAuth } from "@/components/admin-auth";
-import { categories, dashboardStats, notifications, products, sellers, type Product } from "@/lib/mock-data";
+import { useEffect, useMemo, useState } from "react";
+import { useAdminAuth, useAdminUser } from "@/components/admin-auth";
+import {
+  productSellerName,
+  requestAdminApi,
+  type MarketplaceProduct,
+} from "@/lib/admin-api";
+import { categories, notifications, products, sellers, type Product } from "@/lib/mock-data";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutGrid },
@@ -263,99 +268,169 @@ export function AdminLayout({
 }
 
 export function DashboardPage() {
+  const user = useAdminUser();
+  const [metrics, setMetrics] = useState<{
+    pending: number;
+    approved: number;
+    rejected: number;
+  } | null>(null);
+  const [pendingProducts, setPendingProducts] = useState<MarketplaceProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    void Promise.all([
+      requestAdminApi<{ products: MarketplaceProduct[]; total: number }>(
+        user,
+        "/api/admin/products?status=pending&page=1&limit=3",
+      ),
+      requestAdminApi<{ total: number }>(
+        user,
+        "/api/admin/products?status=approved&page=1&limit=1",
+      ),
+      requestAdminApi<{ total: number }>(
+        user,
+        "/api/admin/products?status=rejected&page=1&limit=1",
+      ),
+    ]).then(([pending, approved, rejected]) => {
+      if (!active) return;
+      setMetrics({
+        pending: pending.total,
+        approved: approved.total,
+        rejected: rejected.total,
+      });
+      setPendingProducts(pending.products);
+    }).catch((loadError: unknown) => {
+      if (!active) return;
+      setMetrics(null);
+      setPendingProducts([]);
+      setError(loadError instanceof Error ? loadError.message : "Could not load dashboard data.");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [refreshKey, user]);
+
+  const cards = [
+    { label: "Pending Reviews", value: metrics?.pending ?? null, href: "/products/pending", supported: true, tone: "warning" },
+    { label: "Approved Products", value: metrics?.approved ?? null, href: "/products/approved", supported: true, tone: "success" },
+    { label: "Rejected Products", value: metrics?.rejected ?? null, href: "/products/rejected", supported: true, tone: "danger" },
+    { label: "Active Sellers", value: null, href: null, supported: false, tone: "info" },
+  ] as const;
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
       <PageIntro
-        title="Good morning, Admin"
-        subtitle="Here's what needs your attention today."
+        title="Marketplace Dashboard"
+        subtitle="Live product-review totals from the Fitness Species backend."
         action={
-          <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-[#FF9900] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e98800]">
-            Review Products
-            <ArrowRight className="h-4 w-4" />
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              setRefreshKey((current) => current + 1);
+            }}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#FF9900] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e98800] disabled:opacity-50"
+          >
+            Refresh data
+            <RefreshCw className="h-4 w-4" />
           </button>
         }
       />
 
+      {error && (
+        <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </p>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {dashboardStats.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-[#D5D9D9] bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm text-[#5F6B7A]">{stat.label}</div>
-              <div
-                className={cn(
-                  "inline-flex h-2.5 w-2.5 rounded-full",
-                  stat.tone === "warning" && "bg-[#F08804]",
-                  stat.tone === "success" && "bg-[#067D62]",
-                  stat.tone === "danger" && "bg-[#C7511F]",
-                  stat.tone === "info" && "bg-[#146EB4]",
-                )}
-              />
-            </div>
-            <div className="text-[2rem] font-semibold tracking-[-0.06em] text-[#172033]">{stat.value}</div>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-[#5F6B7A]">{stat.action}</span>
-              <ArrowRight className="h-4 w-4 text-[#5F6B7A]" />
-            </div>
-          </div>
-        ))}
+        {cards.map((card) => {
+          const content = (
+            <>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm text-[#5F6B7A]">{card.label}</div>
+                <div
+                  className={cn(
+                    "inline-flex h-2.5 w-2.5 rounded-full",
+                    card.tone === "warning" && "bg-[#F08804]",
+                    card.tone === "success" && "bg-[#067D62]",
+                    card.tone === "danger" && "bg-[#C7511F]",
+                    card.tone === "info" && "bg-[#146EB4]",
+                  )}
+                />
+              </div>
+              <div className="text-[2rem] font-semibold tracking-[-0.06em] text-[#172033]">
+                {loading ? "…" : card.value ?? "Unavailable"}
+              </div>
+              <div className="mt-4 flex items-center justify-between text-sm text-[#5F6B7A]">
+                <span>{card.supported ? "View products" : "Not provided by backend"}</span>
+                {card.supported && <ArrowRight className="h-4 w-4" />}
+              </div>
+            </>
+          );
+          const className = "rounded-xl border border-[#D5D9D9] bg-white p-4 shadow-sm";
+
+          return card.href
+            ? <Link key={card.label} href={card.href} className={className}>{content}</Link>
+            : <div key={card.label} className={className}>{content}</div>;
+        })}
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.7fr_1fr]">
         <div className="rounded-xl border border-[#D5D9D9] bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[#172033]">Operational Overview</h2>
-              <p className="text-sm text-[#5F6B7A]">Marketplace health and moderation flow</p>
+              <h2 className="text-lg font-semibold text-[#172033]">Product Review Status</h2>
+              <p className="text-sm text-[#5F6B7A]">Current totals returned by the backend</p>
             </div>
-            <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-[#D5D9D9] px-3 py-2 text-sm text-[#172033]">
-              <Filter className="h-4 w-4" />
-              Filters
-            </button>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl bg-[#F7F7F7] p-4">
-              <div className="text-xs uppercase tracking-[0.12em] text-[#5F6B7A]">Approval rate</div>
-              <div className="mt-3 text-3xl font-semibold text-[#172033]">88%</div>
-              <div className="mt-2 flex items-center gap-2 text-sm text-[#067D62]">
-                <TrendingUp className="h-4 w-4" />
-                +3.4% this week
-              </div>
-            </div>
-            <div className="rounded-xl bg-[#F7F7F7] p-4">
-              <div className="text-xs uppercase tracking-[0.12em] text-[#5F6B7A]">Products submitted</div>
-              <div className="mt-3 text-3xl font-semibold text-[#172033]">186</div>
-              <div className="mt-2 text-sm text-[#5F6B7A]">Last 7 days</div>
-            </div>
-            <div className="rounded-xl bg-[#F7F7F7] p-4">
-              <div className="text-xs uppercase tracking-[0.12em] text-[#5F6B7A]">Avg review time</div>
-              <div className="mt-3 text-3xl font-semibold text-[#172033]">4.2h</div>
-              <div className="mt-2 text-sm text-[#5F6B7A]">Across active queue</div>
-            </div>
-          </div>
+          <p className="rounded-xl bg-[#F7F7F7] p-4 text-sm leading-6 text-[#5F6B7A]">
+            {loading
+              ? "Loading review totals…"
+              : metrics
+                ? `${metrics.pending} pending, ${metrics.approved} approved, and ${metrics.rejected} rejected products.`
+                : "Review totals are unavailable until the backend request succeeds."}
+          </p>
         </div>
 
         <div className="rounded-xl border border-[#D5D9D9] bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-[#172033]">Priority queue</h3>
-              <p className="text-sm text-[#5F6B7A]">Most needed action</p>
+              <p className="text-sm text-[#5F6B7A]">Latest pending products from the backend</p>
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF3DC] text-[#F08804]">
               <Star className="h-4 w-4" />
             </div>
           </div>
           <div className="space-y-3">
-            {products.slice(0, 3).map((product) => (
+            {loading ? (
+              <p className="rounded-xl border border-[#D5D9D9] p-3 text-sm text-[#5F6B7A]">Loading pending products…</p>
+            ) : error ? (
+              <p className="rounded-xl border border-[#D5D9D9] p-3 text-sm text-[#5F6B7A]">Pending products are unavailable.</p>
+            ) : pendingProducts.length ? pendingProducts.map((product) => (
               <Link key={product.id} href={`/products/${product.id}`} className="flex items-center gap-3 rounded-xl border border-[#D5D9D9] p-3 transition hover:bg-[#F7F7F7]">
-                <Image src={product.image} alt={product.name} width={48} height={48} className="h-12 w-12 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold text-[#172033]">{product.name}</div>
-                  <div className="text-xs text-[#5F6B7A]">{product.seller}</div>
+                  <div className="text-xs text-[#5F6B7A]">{productSellerName(product)}</div>
                 </div>
                 <StatusBadge status={product.status} />
               </Link>
-            ))}
+            )) : (
+              <p className="rounded-xl border border-[#D5D9D9] p-3 text-sm text-[#5F6B7A]">
+                {metrics?.pending === 0 ? "No pending products." : "No pending products are available."}
+              </p>
+            )}
           </div>
         </div>
       </div>

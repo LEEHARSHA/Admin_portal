@@ -40,13 +40,6 @@ export interface Seller {
   joined: string;
 }
 
-export const dashboardStats = [
-  { label: "Pending Reviews", value: 42, tone: "warning", action: "Review Products" },
-  { label: "Approved Products", value: 1843, tone: "success", action: "View Catalog" },
-  { label: "Rejected Products", value: 89, tone: "danger", action: "Inspect" },
-  { label: "Active Sellers", value: 316, tone: "info", action: "Manage Sellers" },
-];
-
 export const products: Product[] = [
   {
     id: "ALK-1221",
