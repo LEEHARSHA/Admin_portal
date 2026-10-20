@@ -1,4 +1,5 @@
-import { AdminLayout, ProductReviewPage } from "@/components/admin-portal";
+import { AdminLayout } from "@/components/admin-portal";
+import { LiveProductReviewPage } from "@/components/admin-review";
 
 export default async function ProductDetailPage({
   params,
@@ -9,7 +10,7 @@ export default async function ProductDetailPage({
 
   return (
     <AdminLayout activeNav="Products">
-      <ProductReviewPage productId={id} />
+      <LiveProductReviewPage productId={id} />
     </AdminLayout>
   );
 }

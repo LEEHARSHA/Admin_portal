@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -8,28 +10,24 @@ import {
   Bell,
   Check,
   CheckCircle2,
-  ChevronDown,
   FileText,
   Filter,
   HelpCircle,
   LayoutGrid,
   Menu,
-  MoreHorizontal,
   PackageCheck,
   Search,
   Settings,
-  ShieldCheck,
   ShoppingBag,
   SlidersHorizontal,
   Star,
-  Store,
   Tag,
   TrendingUp,
-  UserCheck,
   Users,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useAdminAuth } from "@/components/admin-auth";
 import { categories, dashboardStats, notifications, products, sellers, type Product } from "@/lib/mock-data";
 
 const navItems = [
@@ -99,6 +97,27 @@ export function AdminLayout({
 }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const { user, signOut } = useAdminAuth();
+  const router = useRouter();
+  const accountLabel = user?.displayName || user?.email || "Signed-in user";
+  const avatarLabel = accountLabel
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  async function handleSignOut() {
+    setSignOutError(null);
+    try {
+      await signOut();
+      router.replace("/login");
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : "Could not sign out.");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-[#172033]">
@@ -181,18 +200,34 @@ export function AdminLayout({
               Help
             </button>
 
-            <div className="flex items-center gap-3 rounded-lg border border-[#D5D9D9] bg-white px-2.5 py-1.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#146EB4] text-sm font-semibold text-white">AM</div>
-              <div className="hidden text-left sm:block">
-                <div className="text-sm font-semibold text-[#172033]">Alicia Martin</div>
-                <div className="text-[11px] uppercase tracking-[0.08em] text-[#5F6B7A]">Admin</div>
+            <div className="flex items-center gap-2 rounded-lg border border-[#D5D9D9] bg-white p-1.5">
+              <div
+                aria-hidden="true"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#146EB4] text-sm font-semibold text-white"
+              >
+                {avatarLabel || "U"}
               </div>
-              <ChevronDown className="h-4 w-4 text-[#5F6B7A]" />
+              <div className="hidden max-w-48 text-left sm:block">
+                <div className="truncate text-sm font-semibold text-[#172033]">{accountLabel}</div>
+                <div className="text-[11px] uppercase tracking-[0.08em] text-[#5F6B7A]">Firebase account</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                className="rounded-md px-2 py-2 text-xs font-medium text-[#5F6B7A] hover:bg-[#F7F7F7] hover:text-[#172033]"
+              >
+                Sign out
+              </button>
             </div>
           </div>
         </div>
       </header>
 
+      {signOutError && (
+        <p role="alert" className="mx-auto mt-4 max-w-[1600px] px-4 text-sm text-red-700 sm:px-6 lg:px-8">
+          {signOutError}
+        </p>
+      )}
       <div className="mx-auto flex max-w-[1600px] gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <aside className={cn("w-full max-w-[260px] shrink-0 lg:block", mobileOpen ? "block" : "hidden")}>
           <div className="rounded-xl border border-[#D5D9D9] bg-white p-3 shadow-sm">
@@ -313,7 +348,7 @@ export function DashboardPage() {
           <div className="space-y-3">
             {products.slice(0, 3).map((product) => (
               <Link key={product.id} href={`/products/${product.id}`} className="flex items-center gap-3 rounded-xl border border-[#D5D9D9] p-3 transition hover:bg-[#F7F7F7]">
-                <img src={product.image} alt={product.name} className="h-12 w-12 rounded-lg object-cover" />
+                <Image src={product.image} alt={product.name} width={48} height={48} className="h-12 w-12 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold text-[#172033]">{product.name}</div>
                   <div className="text-xs text-[#5F6B7A]">{product.seller}</div>
@@ -408,7 +443,7 @@ export function PendingQueuePage() {
                     <tr key={product.id} className="transition hover:bg-[#F7F7F7]">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <img src={product.image} alt={product.name} className="h-12 w-12 rounded-lg border border-[#D5D9D9] bg-white object-cover" />
+                          <Image src={product.image} alt={product.name} width={48} height={48} className="h-12 w-12 rounded-lg border border-[#D5D9D9] bg-white object-cover" />
                           <div>
                             <div className="font-medium text-[#172033]">{product.name}</div>
                             <div className="text-xs text-[#5F6B7A]">{product.sku}</div>
@@ -509,12 +544,12 @@ export function ProductReviewPage({ productId }: { productId: string }) {
           <div className="rounded-xl border border-[#D5D9D9] bg-white p-4 shadow-sm">
             <div className="grid gap-3 md:grid-cols-[1.3fr_0.7fr]">
               <div className="rounded-xl border border-[#D5D9D9] bg-[#F7F7F7] p-3">
-                <img src={currentProduct.image} alt={currentProduct.name} className="h-[420px] w-full rounded-xl object-cover" />
+                <Image src={currentProduct.image} alt={currentProduct.name} width={1200} height={900} className="h-[420px] w-full rounded-xl object-cover" />
               </div>
               <div className="grid gap-3">
                 {currentProduct.gallery.map((image, index) => (
                   <div key={`${image}-${index}`} className="rounded-xl border border-[#D5D9D9] bg-[#F7F7F7] p-2">
-                    <img src={image} alt={`${currentProduct.name} view ${index + 1}`} className="h-28 w-full rounded-lg object-cover" />
+                    <Image src={image} alt={`${currentProduct.name} view ${index + 1}`} width={280} height={112} className="h-28 w-full rounded-lg object-cover" />
                   </div>
                 ))}
               </div>
@@ -755,7 +790,7 @@ export function ApprovedProductsPage() {
                 <tr key={product.id} className="border-t border-[#E8ECEC] hover:bg-[#F7F7F7]">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={product.image} alt={product.name} className="h-11 w-11 rounded-lg border border-[#D5D9D9] bg-white object-cover" />
+                      <Image src={product.image} alt={product.name} width={44} height={44} className="h-11 w-11 rounded-lg border border-[#D5D9D9] bg-white object-cover" />
                       <div>
                         <div className="font-medium text-[#172033]">{product.name}</div>
                         <div className="text-xs text-[#5F6B7A]">{product.sku}</div>
@@ -805,7 +840,7 @@ export function RejectedProductsPage() {
                 <tr key={product.id} className="border-t border-[#E8ECEC] hover:bg-[#F7F7F7]">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={product.image} alt={product.name} className="h-11 w-11 rounded-lg border border-[#D5D9D9] bg-white object-cover" />
+                      <Image src={product.image} alt={product.name} width={44} height={44} className="h-11 w-11 rounded-lg border border-[#D5D9D9] bg-white object-cover" />
                       <div>
                         <div className="font-medium text-[#172033]">{product.name}</div>
                         <div className="text-xs text-[#5F6B7A]">{product.sku}</div>

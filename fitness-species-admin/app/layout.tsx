@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AdminAuthProvider } from "@/components/admin-auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#F3F4F6] text-[#172033]">{children}</body>
+      <body className="min-h-full bg-[#F3F4F6] text-[#172033]">
+        <AdminAuthProvider>{children}</AdminAuthProvider>
+      </body>
     </html>
   );
 }
