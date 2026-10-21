@@ -45,6 +45,7 @@ function isConfiguredProductImage(src: string) {
         url.hostname === "images.unsplash.com"
         || (url.hostname === "www.myprotein.co.in" && url.pathname === "/images")
         || (url.hostname === "img.tatacliq.com" && url.pathname.startsWith("/images/i26/"))
+        || (url.hostname === "encrypted-tbn1.gstatic.com" && url.pathname === "/shopping")
       );
   } catch {
     return false;
@@ -61,7 +62,39 @@ function ProductImage({
   const src = productImage(product);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const showImage = Boolean(src) && isConfiguredProductImage(src) && failedSrc !== src;
-  const onError = () => setFailedSrc(src);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" && src && !isConfiguredProductImage(src)) {
+      let hostname = "invalid URL";
+      try {
+        hostname = new URL(src).hostname;
+      } catch {
+        // Keep diagnostics free of the full untrusted URL.
+      }
+      console.warn("Product image URL is invalid or not allowlisted.", {
+        productId: product.id,
+        sku: product.sku,
+        hostname,
+      });
+    }
+  }, [product.id, product.sku, src]);
+
+  const onError = () => {
+    setFailedSrc(src);
+    if (process.env.NODE_ENV !== "production") {
+      let hostname = "invalid URL";
+      try {
+        hostname = new URL(src).hostname;
+      } catch {
+        // Keep diagnostics free of the full untrusted URL.
+      }
+      console.warn("Product image failed to load.", {
+        productId: product.id,
+        sku: product.sku,
+        hostname,
+      });
+    }
+  };
 
   if (variant === "thumbnail") {
     return showImage ? (

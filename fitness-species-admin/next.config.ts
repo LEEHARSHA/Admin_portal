@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
         hostname: "img.tatacliq.com",
         pathname: "/images/i26/**",
       },
+      {
+        protocol: "https",
+        hostname: "encrypted-tbn1.gstatic.com",
+        pathname: "/shopping",
+      },
     ],
   },
 };
