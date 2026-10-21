@@ -44,6 +44,7 @@ function isConfiguredProductImage(src: string) {
       && (
         url.hostname === "images.unsplash.com"
         || (url.hostname === "www.myprotein.co.in" && url.pathname === "/images")
+        || (url.hostname === "img.tatacliq.com" && url.pathname.startsWith("/images/i26/"))
       );
   } catch {
     return false;

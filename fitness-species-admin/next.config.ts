@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
         hostname: "www.myprotein.co.in",
         pathname: "/images",
       },
+      {
+        protocol: "https",
+        hostname: "img.tatacliq.com",
+        pathname: "/images/i26/**",
+      },
     ],
   },
 };
