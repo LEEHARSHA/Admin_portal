@@ -12,7 +12,7 @@ export type MarketplaceProduct = {
   price: number;
   compareAtPrice?: number | null;
   stock: number;
-  images?: Array<string | { url?: string; isPrimary?: boolean; alt?: string }>;
+  images?: string[];
   specifications?: Record<string, string | number | boolean>;
   status: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
@@ -43,6 +43,16 @@ export function isAllowedProductImageUrl(src: string) {
         || (
           url.hostname === "contents.mediadecathlon.com"
           && /^\/p\d+\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(url.pathname)
+        )
+        || (
+          url.hostname === "5.imimg.com"
+          && /^\/data5\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9._-]+)+$/.test(url.pathname)
+        )
+        || (
+          url.hostname === "firebasestorage.googleapis.com"
+          && /^\/v0\/b\/sellerportal-2786c\.firebasestorage\.app\/o\/sellers%2F[^/]+%2Fproducts%2F[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(url.pathname)
+          && url.searchParams.get("alt") === "media"
+          && Boolean(url.searchParams.get("token"))
         )
         || (
           url.hostname === "encrypted-tbn1.gstatic.com"
@@ -111,23 +121,9 @@ export async function requestAdminApi<T>(
 
 export function productImage(product: MarketplaceProduct) {
   const images = Array.isArray(product.images) ? product.images : [];
-  const imageUrl = (image: (typeof images)[number] | null) => {
-    if (typeof image === "string") return image.trim();
-    return image && typeof image === "object" && "url" in image && typeof image.url === "string"
-      ? image.url.trim()
-      : "";
-  };
-  const primaryIndex = images.findIndex((image) => (
-    typeof image === "object"
-    && image !== null
-    && "isPrimary" in image
-    && image.isPrimary
-    && isAllowedProductImageUrl(imageUrl(image))
-  ));
-  const candidates = primaryIndex === -1
-    ? images
-    : [images[primaryIndex], ...images.filter((_, index) => index !== primaryIndex)];
-  return candidates.map(imageUrl).find(isAllowedProductImageUrl) || "";
+  return images
+    .map((image) => (typeof image === "string" ? image.trim() : ""))
+    .find(isAllowedProductImageUrl) || "";
 }
 
 export function productSellerName(product: MarketplaceProduct) {

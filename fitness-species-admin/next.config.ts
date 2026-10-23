@@ -24,6 +24,16 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "5.imimg.com",
+        pathname: "/data5/**",
+      },
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: "/v0/b/sellerportal-2786c.firebasestorage.app/o/**",
+      },
+      {
+        protocol: "https",
         hostname: "encrypted-tbn1.gstatic.com",
         pathname: "/shopping",
       },

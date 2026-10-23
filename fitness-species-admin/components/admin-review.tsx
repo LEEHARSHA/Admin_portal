@@ -39,11 +39,7 @@ function productImageHostname(product: MarketplaceProduct, src: string) {
   let candidate = src;
   if (!candidate) {
     const firstImage = Array.isArray(product.images) ? product.images[0] : undefined;
-    candidate = typeof firstImage === "string"
-      ? firstImage
-      : firstImage && typeof firstImage === "object" && typeof firstImage.url === "string"
-        ? firstImage.url
-        : "";
+    candidate = typeof firstImage === "string" ? firstImage : "";
   }
   try {
     return candidate ? new URL(candidate.trim()).hostname : "none";

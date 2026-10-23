@@ -29,6 +29,8 @@ npm run build
 npm run start
 ```
 
+Run the product image URL-selection regression tests with `npm test` (Node.js 22.18 or newer).
+
 ## Vercel deployment
 
 1. Push the project to GitHub.
@@ -71,3 +73,23 @@ Product review pages call the registered `/api/admin/products?status=...`, `/api
 The deployed backend currently responds healthy and reports MongoDB database `fitness_species`. Its active routes verify Firebase ID tokens against project `sellerportal-2786c` and authorize admins only through the server-side `ADMIN_FIREBASE_UIDS` allowlist. It allows the exact Seller and Admin Vercel origins and authenticated request headers. Production login and review still require working Firebase Web App values in Vercel, backend Firebase Admin credentials, and an authorized admin UID.
 
 The currently deployed Admin Portal was checked and reports that all six Firebase configuration values are missing. Configure the six `NEXT_PUBLIC_FIREBASE_*` values from the `sellerportal-2786c` Web App and `NEXT_PUBLIC_API_URL=https://fitness-species-backend.onrender.com` in its Vercel Production environment, confirm the admin domain is authorized in Firebase Authentication, and redeploy. Then verify login with an allowlisted admin and a normal seller account; do not treat a successful login alone as admin authorization.
+
+## Product image providers
+
+Live product review lists and detail pages share the image selector and renderer in `components/admin-review.tsx`. The backend product contract is `images: string[]`; the Admin Portal selects the first valid HTTPS URL and displays its existing fallback when no supported URL remains or loading fails.
+
+The Admin Portal currently allows these remote image providers and path scopes:
+
+- `images.unsplash.com` (HTTPS)
+- `www.myprotein.co.in/images`
+- `img.tatacliq.com/images/i26/**`
+- `contents.mediadecathlon.com/p*/**`
+- `5.imimg.com/data5/**` (IndiaMART CDN)
+- `firebasestorage.googleapis.com/v0/b/sellerportal-2786c.firebasestorage.app/o/sellers/{uid}/products/{uuid}.{jpg|png|webp}` (seller-owned uploads)
+- `encrypted-tbn1.gstatic.com/shopping` and `/images` (Google Shopping thumbnails)
+
+The Creatine product's verified image URL uses `5.imimg.com/data5/...`; this is an observed image CDN URL, not evidence that the Seller Portal uploads files to or controls IndiaMART storage. Firebase Storage is not added to the allowlist because its use by the Seller Portal has not been verified. The Admin Portal repository does not contain the Seller Portal or backend source, so upload validation, storage ownership, MongoDB persistence, and API serialization must be verified and maintained in those projects.
+
+The Seller Portal uploads JPEG, PNG, and WebP files to the signed-in seller's Firebase Storage folder; new product submissions save the resulting download URLs as strings in `images`. Firebase Storage rules limit writes to the owner's folder and validate content type and file size. The backend independently checks the exact bucket, seller UID, object path, and URL shape on create/update while preserving unchanged legacy image URLs. Deploy the Storage rules with `firebase deploy --only storage --project sellerportal-2786c`, and configure `FIREBASE_STORAGE_BUCKET=sellerportal-2786c.firebasestorage.app` in the backend environment.
+
+To add another provider, first verify its URL in an authenticated product response and confirm that the image loads. Add an exact HTTPS hostname and the narrowest stable path pattern to both `isAllowedProductImageUrl` in `lib/admin-api.ts` and `images.remotePatterns` in `next.config.ts`, then add URL selection/validation regression coverage for both an accepted URL and rejected sibling hosts/paths. Do not accept arbitrary hosts, broad wildcard hostnames, or unvalidated seller-submitted URLs. Prefer extending the controlled upload flow rather than accepting new external links.
