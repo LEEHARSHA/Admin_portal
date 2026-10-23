@@ -19,8 +19,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "contents.mediadecathlon.com",
+        pathname: "/p*/**",
+      },
+      {
+        protocol: "https",
         hostname: "encrypted-tbn1.gstatic.com",
         pathname: "/shopping",
+      },
+      {
+        protocol: "https",
+        hostname: "encrypted-tbn1.gstatic.com",
+        pathname: "/images",
       },
     ],
   },

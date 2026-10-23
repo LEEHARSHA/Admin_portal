@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminReviewAccess, useAdminUser } from "@/components/admin-auth";
 import {
+  isAllowedProductImageUrl,
   productImage,
   productSellerName,
   requestAdminApi,
@@ -34,21 +35,20 @@ function dateLabel(value?: string | Date) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
 }
 
-function isConfiguredProductImage(src: string) {
+function productImageHostname(product: MarketplaceProduct, src: string) {
+  let candidate = src;
+  if (!candidate) {
+    const firstImage = Array.isArray(product.images) ? product.images[0] : undefined;
+    candidate = typeof firstImage === "string"
+      ? firstImage
+      : firstImage && typeof firstImage === "object" && typeof firstImage.url === "string"
+        ? firstImage.url
+        : "";
+  }
   try {
-    const url = new URL(src);
-    return url.protocol === "https:"
-      && !url.port
-      && !url.username
-      && !url.password
-      && (
-        url.hostname === "images.unsplash.com"
-        || (url.hostname === "www.myprotein.co.in" && url.pathname === "/images")
-        || (url.hostname === "img.tatacliq.com" && url.pathname.startsWith("/images/i26/"))
-        || (url.hostname === "encrypted-tbn1.gstatic.com" && url.pathname === "/shopping")
-      );
+    return candidate ? new URL(candidate.trim()).hostname : "none";
   } catch {
-    return false;
+    return "invalid URL";
   }
 }
 
@@ -61,37 +61,23 @@ function ProductImage({
 }) {
   const src = productImage(product);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const showImage = Boolean(src) && isConfiguredProductImage(src) && failedSrc !== src;
+  const showImage = Boolean(src) && isAllowedProductImageUrl(src) && failedSrc !== src;
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" && src && !isConfiguredProductImage(src)) {
-      let hostname = "invalid URL";
-      try {
-        hostname = new URL(src).hostname;
-      } catch {
-        // Keep diagnostics free of the full untrusted URL.
-      }
-      console.warn("Product image URL is invalid or not allowlisted.", {
+    if (process.env.NODE_ENV !== "production" && !src) {
+      console.warn("Product image is unavailable.", {
         productId: product.id,
-        sku: product.sku,
-        hostname,
+        hostname: productImageHostname(product, src),
       });
     }
-  }, [product.id, product.sku, src]);
+  }, [product, src]);
 
   const onError = () => {
     setFailedSrc(src);
     if (process.env.NODE_ENV !== "production") {
-      let hostname = "invalid URL";
-      try {
-        hostname = new URL(src).hostname;
-      } catch {
-        // Keep diagnostics free of the full untrusted URL.
-      }
       console.warn("Product image failed to load.", {
         productId: product.id,
-        sku: product.sku,
-        hostname,
+        hostname: productImageHostname(product, src),
       });
     }
   };

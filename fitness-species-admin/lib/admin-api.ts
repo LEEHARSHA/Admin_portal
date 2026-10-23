@@ -29,6 +29,31 @@ export type MarketplaceProduct = {
   } | null;
 };
 
+export function isAllowedProductImageUrl(src: string) {
+  try {
+    const url = new URL(src.trim());
+    return url.protocol === "https:"
+      && !url.port
+      && !url.username
+      && !url.password
+      && (
+        url.hostname === "images.unsplash.com"
+        || (url.hostname === "www.myprotein.co.in" && url.pathname === "/images")
+        || (url.hostname === "img.tatacliq.com" && url.pathname.startsWith("/images/i26/"))
+        || (
+          url.hostname === "contents.mediadecathlon.com"
+          && /^\/p\d+\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(url.pathname)
+        )
+        || (
+          url.hostname === "encrypted-tbn1.gstatic.com"
+          && (url.pathname === "/shopping" || url.pathname === "/images")
+        )
+      );
+  } catch {
+    return false;
+  }
+}
+
 type ApiResponse<T> = {
   success: boolean;
   message?: string;
@@ -87,20 +112,22 @@ export async function requestAdminApi<T>(
 export function productImage(product: MarketplaceProduct) {
   const images = Array.isArray(product.images) ? product.images : [];
   const imageUrl = (image: (typeof images)[number] | null) => {
-    if (typeof image === "string") return image;
+    if (typeof image === "string") return image.trim();
     return image && typeof image === "object" && "url" in image && typeof image.url === "string"
-      ? image.url
+      ? image.url.trim()
       : "";
   };
-  const primary = images.find((image) => (
+  const primaryIndex = images.findIndex((image) => (
     typeof image === "object"
     && image !== null
     && "isPrimary" in image
     && image.isPrimary
-    && imageUrl(image)
+    && isAllowedProductImageUrl(imageUrl(image))
   ));
-  if (primary) return imageUrl(primary);
-  return images.map(imageUrl).find(Boolean) || "";
+  const candidates = primaryIndex === -1
+    ? images
+    : [images[primaryIndex], ...images.filter((_, index) => index !== primaryIndex)];
+  return candidates.map(imageUrl).find(isAllowedProductImageUrl) || "";
 }
 
 export function productSellerName(product: MarketplaceProduct) {
