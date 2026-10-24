@@ -35,30 +35,7 @@ export function isAllowedProductImageUrl(src: string) {
     return url.protocol === "https:"
       && !url.port
       && !url.username
-      && !url.password
-      && (
-        url.hostname === "images.unsplash.com"
-        || (url.hostname === "www.myprotein.co.in" && url.pathname === "/images")
-        || (url.hostname === "img.tatacliq.com" && url.pathname.startsWith("/images/i26/"))
-        || (
-          url.hostname === "contents.mediadecathlon.com"
-          && /^\/p\d+\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(url.pathname)
-        )
-        || (
-          url.hostname === "5.imimg.com"
-          && /^\/data5\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9._-]+)+$/.test(url.pathname)
-        )
-        || (
-          url.hostname === "firebasestorage.googleapis.com"
-          && /^\/v0\/b\/sellerportal-2786c\.firebasestorage\.app\/o\/sellers%2F[^/]+%2Fproducts%2F[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(url.pathname)
-          && url.searchParams.get("alt") === "media"
-          && Boolean(url.searchParams.get("token"))
-        )
-        || (
-          url.hostname === "encrypted-tbn1.gstatic.com"
-          && (url.pathname === "/shopping" || url.pathname === "/images")
-        )
-      );
+      && !url.password;
   } catch {
     return false;
   }

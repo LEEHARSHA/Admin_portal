@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -80,30 +79,34 @@ function ProductImage({
 
   if (variant === "thumbnail") {
     return showImage ? (
-      <Image
+      <img
         src={src}
         alt=""
-        width={44}
-        height={44}
         className="h-11 w-11 shrink-0 rounded object-cover"
         onError={onError}
       />
-    ) : <div aria-hidden="true" className="h-11 w-11 shrink-0 rounded bg-[#F1F3F6]" />;
+    ) : (
+      <img
+        src="/product-image-fallback.svg"
+        alt=""
+        className="h-11 w-11 shrink-0 rounded object-cover"
+      />
+    );
   }
 
   return showImage ? (
-    <Image
+    <img
       src={src}
       alt={product.name}
-      width={1200}
-      height={900}
       className="max-h-[420px] w-full rounded-xl bg-[#F7F7F7] object-contain"
       onError={onError}
     />
   ) : (
-    <div className="flex h-48 w-full items-center justify-center rounded-xl bg-[#F7F7F7] text-sm text-[#5F6B7A]">
-      No image available
-    </div>
+    <img
+      src="/product-image-fallback.svg"
+      alt="Product image unavailable"
+      className="max-h-[420px] w-full rounded-xl bg-[#F7F7F7] object-contain"
+    />
   );
 }
 
