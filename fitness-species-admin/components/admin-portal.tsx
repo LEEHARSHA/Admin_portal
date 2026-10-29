@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   FileText,
   HelpCircle,
+  HeartHandshake,
   LayoutGrid,
   Menu,
   PackageCheck,
@@ -21,6 +22,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Star,
+  Stethoscope,
   Tag,
   TrendingUp,
   Users,
@@ -33,12 +35,15 @@ import {
   requestAdminApi,
   type MarketplaceProduct,
 } from "@/lib/admin-api";
+import { DOCTOR_MANAGEMENT_NAV_ITEM } from "@/lib/doctor-management";
 import { categories, notifications, products, sellers, type Product } from "@/lib/mock-data";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutGrid },
   { label: "Products", href: "/products/pending", icon: ShoppingBag },
   { label: "Pending Review", href: "/products/pending", icon: FileText },
+  { label: "Community Review", href: "/community", icon: HeartHandshake },
+  { ...DOCTOR_MANAGEMENT_NAV_ITEM, icon: Stethoscope },
   { label: "Approved", href: "/products/approved", icon: PackageCheck },
   { label: "Rejected", href: "/products/rejected", icon: AlertTriangle },
   { label: "Sellers", href: "/sellers", icon: Users },

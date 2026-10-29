@@ -46,6 +46,12 @@ type ApiResponse<T> = {
   message?: string;
 } & T;
 
+export function adminApiErrorMessage(status: number, message: string) {
+  if (status === 401) return `Authentication required: ${message}`;
+  if (status === 403) return `Administrator access denied: ${message}`;
+  return message;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
 
 export async function requestAdminApi<T>(
@@ -82,13 +88,7 @@ export async function requestAdminApi<T>(
   }
   if (!response.ok) {
     const message = payload?.message || `Backend request failed with HTTP ${response.status}.`;
-    if (response.status === 401) {
-      throw new Error(`Authentication required: ${message}`);
-    }
-    if (response.status === 403) {
-      throw new Error(`Administrator access denied: ${message}`);
-    }
-    throw new Error(message);
+    throw new Error(adminApiErrorMessage(response.status, message));
   }
   if (!payload?.success) {
     throw new Error(payload?.message || "Backend returned an unsuccessful response.");

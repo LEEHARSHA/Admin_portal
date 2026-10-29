@@ -93,3 +93,14 @@ The Creatine product's verified image URL uses `5.imimg.com/data5/...`; this is 
 The Seller Portal uploads JPEG, PNG, and WebP files to the signed-in seller's Firebase Storage folder; new product submissions save the resulting download URLs as strings in `images`. Firebase Storage rules limit writes to the owner's folder and validate content type and file size. The backend independently checks the exact bucket, seller UID, object path, and URL shape on create/update while preserving unchanged legacy image URLs. Deploy the Storage rules with `firebase deploy --only storage --project sellerportal-2786c`, and configure `FIREBASE_STORAGE_BUCKET=sellerportal-2786c.firebasestorage.app` in the backend environment.
 
 To add another provider, first verify its URL in an authenticated product response and confirm that the image loads. Add an exact HTTPS hostname and the narrowest stable path pattern to both `isAllowedProductImageUrl` in `lib/admin-api.ts` and `images.remotePatterns` in `next.config.ts`, then add URL selection/validation regression coverage for both an accepted URL and rejected sibling hosts/paths. Do not accept arbitrary hosts, broad wildcard hostnames, or unvalidated seller-submitted URLs. Prefer extending the controlled upload flow rather than accepting new external links.
+
+## Community moderation
+
+The `/community` page reviews pending Fitness Species Community organizer applications and event submissions. It calls the existing backend API with the signed-in Firebase ID token:
+
+- `GET /api/community/admin/organizers?status=pending`
+- `PATCH /api/community/admin/organizers/:uid/review`
+- `GET /api/community/admin/events?status=pending_review`
+- `PATCH /api/community/admin/events/:eventId/review`
+
+The page does not grant administrator privileges. The backend must have the reviewer UID configured in `ADMIN_FIREBASE_UIDS`; ordinary signed-in users receive HTTP 403. Rejection and changes-requested decisions require a review note. An event can be approved only when its organizer is approved.
