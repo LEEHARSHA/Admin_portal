@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Bell,
+  Building2,
   Check,
   CheckCircle2,
   FileText,
@@ -36,6 +37,7 @@ import {
   type MarketplaceProduct,
 } from "@/lib/admin-api";
 import { DOCTOR_MANAGEMENT_NAV_ITEM } from "@/lib/doctor-management";
+import { ORGANIZATION_MANAGEMENT_NAV_ITEM } from "@/lib/organization-management";
 import { categories, notifications, products, sellers, type Product } from "@/lib/mock-data";
 
 const navItems = [
@@ -44,6 +46,7 @@ const navItems = [
   { label: "Pending Review", href: "/products/pending", icon: FileText },
   { label: "Community Review", href: "/community", icon: HeartHandshake },
   { ...DOCTOR_MANAGEMENT_NAV_ITEM, icon: Stethoscope },
+  { ...ORGANIZATION_MANAGEMENT_NAV_ITEM, icon: Building2 },
   { label: "Approved", href: "/products/approved", icon: PackageCheck },
   { label: "Rejected", href: "/products/rejected", icon: AlertTriangle },
   { label: "Sellers", href: "/sellers", icon: Users },

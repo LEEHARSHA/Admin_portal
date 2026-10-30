@@ -20,6 +20,14 @@ import {
   getDoctorReviewActions,
   type DoctorApplication,
 } from "./doctor-management.ts";
+import {
+  createOrganizationReviewPayload,
+  organizationDetailApiPath,
+  organizationListApiPath,
+  organizationPageCount,
+  organizationQueueDisplayState,
+  organizationReviewApiPath,
+} from "./organization-management.ts";
 
 const decathlonImage =
   "https://contents.mediadecathlon.com/p1899141/682c88daaeb6785c264ccc027406ea84/p1899141.jpg?format=auto&quality=70&f=969x0";
@@ -70,6 +78,38 @@ test("returns the first valid URL and handles missing image arrays", () => {
   );
   assert.equal(productImage(product([])), "");
   assert.equal(productImage(product()), "");
+});
+
+test("organization management API paths encode identifiers and status filters", () => {
+  assert.equal(
+    organizationListApiPath("pending", 2),
+    "/api/doctor-portal/admin/organizations?status=pending&page=2&limit=25",
+  );
+  assert.equal(
+    organizationListApiPath("approved", 1, 50),
+    "/api/doctor-portal/admin/organizations?status=approved&page=1&limit=50",
+  );
+  assert.equal(organizationDetailApiPath("org/id"), "/api/doctor-portal/admin/organizations/org%2Fid");
+  assert.equal(organizationReviewApiPath("organization-1"), "/api/doctor-portal/admin/organizations/organization-1/review");
+});
+
+test("organization review requires a rejection reason and bounds the backend payload", () => {
+  assert.deepEqual(createOrganizationReviewPayload("approved"), { status: "approved" });
+  assert.deepEqual(
+    createOrganizationReviewPayload("rejected", "  Registration could not be verified.  "),
+    { status: "rejected", reviewNote: "Registration could not be verified." },
+  );
+  assert.throws(() => createOrganizationReviewPayload("rejected", "  "), /reason is required/i);
+  assert.throws(() => createOrganizationReviewPayload("rejected", "x".repeat(1001)), /1000 characters/i);
+});
+
+test("organization queue pagination and display states handle empty and failed queues", () => {
+  assert.equal(organizationPageCount(0), 1);
+  assert.equal(organizationPageCount(26), 2);
+  assert.equal(organizationQueueDisplayState({ loading: true, error: "", count: 0 }), "loading");
+  assert.equal(organizationQueueDisplayState({ loading: false, error: "Denied", count: 0 }), "error");
+  assert.equal(organizationQueueDisplayState({ loading: false, error: "", count: 0 }), "empty");
+  assert.equal(organizationQueueDisplayState({ loading: false, error: "", count: 1 }), "results");
 });
 
 function doctorApplication(overrides: Partial<DoctorApplication> = {}): DoctorApplication {

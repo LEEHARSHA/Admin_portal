@@ -8,6 +8,7 @@ A premium marketplace operations portal for Fitness Species / ALK built with Nex
 - Firebase ID-token authentication for backend product-review operations
 - Live pending, approved, and rejected product views from the backend API
 - Firebase-authenticated product approval and rejection flow
+- Backend-authorized hospital and clinic organization verification queues, details, and review actions
 - Seller and category management views
 - Responsive admin shell with sticky top bar and sidebar
 - Dashboard product totals and priority queue are loaded from the backend; unsupported seller totals are shown as unavailable
@@ -62,13 +63,13 @@ The Firebase Web configuration is supplied at runtime through `.env.local`, whic
 ## Security notes
 
 - Signing in authenticates an account; it does not make that account an administrator. The frontend does not use a role label or client-side claim to grant admin privileges.
-- The backend verifies Firebase ID tokens and checks the server-managed `ADMIN_FIREBASE_UIDS` allowlist for review operations. The current backend has no separate admin-verification endpoint; its `/api/admin/products` endpoints enforce both checks on every operation, and non-allowlisted users receive HTTP 403.
+- The backend verifies Firebase ID tokens and checks the server-managed `ADMIN_FIREBASE_UIDS` allowlist for product, doctor, and organization review operations. Non-allowlisted users receive HTTP 403.
 - A Firebase session only controls access to the client portal shell. The backend remains the authority for admin access; any future admin API route must apply the same server-side authentication and allowlist checks.
 - MongoDB credentials, service account keys, and private server secrets remain server-side only.
 
 ## API readiness
 
-Product review pages call the registered `/api/admin/products?status=...`, `/api/admin/products/:productId`, and `PATCH /api/admin/products/:productId/review` routes. Review requests send `{ status: "approved" }` or `{ status: "rejected", rejectionReason }`; rejection reasons must contain 5–1000 characters. Dashboard status counts use the backend's `total` field. The backend has no admin seller-count endpoint, so Active Sellers is shown as unavailable instead of fabricated. Other non-product-management screens remain prototype views backed by local mock data.
+Product review pages call the registered `/api/admin/products?status=...`, `/api/admin/products/:productId`, and `PATCH /api/admin/products/:productId/review` routes. Review requests send `{ status: "approved" }` or `{ status: "rejected", rejectionReason }`; rejection reasons must contain 5–1000 characters. Dashboard status counts use the backend's `total` field. Organization management calls `GET /api/doctor-portal/admin/organizations?status=pending|approved|rejected&page=1&limit=25`, `GET /api/doctor-portal/admin/organizations/:organizationId`, and `PATCH /api/doctor-portal/admin/organizations/:organizationId/review`. Rejections send a required `reviewNote`; the backend records the review timestamp and administrator UID and enforces the Firebase UID allowlist. The backend's current organization registration schema does not collect verification documents; existing stored `verificationDocuments`, if present, are rendered only on the admin detail view. The backend has no admin seller-count endpoint, so Active Sellers is shown as unavailable instead of fabricated. Other non-product-management screens remain prototype views backed by local mock data.
 
 The deployed backend currently responds healthy and reports MongoDB database `fitness_species`. Its active routes verify Firebase ID tokens against project `sellerportal-2786c` and authorize admins only through the server-side `ADMIN_FIREBASE_UIDS` allowlist. It allows the exact Seller and Admin Vercel origins and authenticated request headers. Production login and review still require working Firebase Web App values in Vercel, backend Firebase Admin credentials, and an authorized admin UID.
 
