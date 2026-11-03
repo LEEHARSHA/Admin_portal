@@ -180,12 +180,15 @@ export function DoctorManagementPage({
               <thead className="bg-[#F7F7F7] text-[#5F6B7A]">
                 <tr>
                   <th className="px-4 py-3 font-medium">Doctor</th>
+                  <th className="px-4 py-3 font-medium">Source</th>
+                  <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Registration (unverified)</th>
                   <th className="px-4 py-3 font-medium">Qualifications</th>
-                  <th className="px-4 py-3 font-medium">Clinic</th>
+                  <th className="px-4 py-3 font-medium">Organization / clinic</th>
                   <th className="px-4 py-3 font-medium">Consultation</th>
-                  <th className="px-4 py-3 font-medium">Submitted</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Application date</th>
+                  <th className="px-4 py-3 font-medium">Account</th>
+                  <th className="px-4 py-3 font-medium">Doctor verification</th>
                   <th className="px-4 py-3 font-medium">Details</th>
                 </tr>
               </thead>
@@ -196,11 +199,25 @@ export function DoctorManagementPage({
                       <div className="font-medium text-[#172033]">{application.fullName || "Name not provided"}</div>
                       <div className="text-xs text-[#5F6B7A]">{application.primarySpecialty || "Specialty not provided"}</div>
                     </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-[#172033]">{application.source === "hospital" ? "Hospital/Clinic" : "Individual"}</div>
+                    </td>
+                    <td className="px-4 py-3">{application.professionalEmail || application.email || "Not provided"}</td>
                     <td className="px-4 py-3">{application.medicalRegistrationNumber || "Not provided"}</td>
-                    <td className="px-4 py-3">{application.qualifications?.map(({ qualification }) => qualification).join(", ") || "Not provided"}</td>
-                    <td className="px-4 py-3">{application.clinicName || "Not provided"}</td>
+                    <td className="px-4 py-3">{application.qualifications?.map((qualification) => (
+                      typeof qualification === "string" ? qualification : qualification.qualification
+                    )).join(", ") || "Not provided"}</td>
+                    <td className="px-4 py-3">
+                      <div>{application.organizationName || application.clinicName || "Not provided"}</div>
+                      {application.source === "hospital" && (
+                        <div className="mt-1 text-xs text-[#5F6B7A]">
+                          Organization: {statusLabel(application.organizationVerificationStatus || "unknown")}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{application.consultationMode || "Not provided"}</td>
                     <td className="px-4 py-3">{formatDoctorDate(application.submittedAt)}</td>
+                    <td className="px-4 py-3">{application.accountStatus === "active" ? "Active" : "Inactive"}</td>
                     <td className="px-4 py-3"><StatusBadge status={application.status} /></td>
                     <td className="px-4 py-3">
                       <Link href={doctorDetailPath(application.id)} className="rounded-lg border border-[#D5D9D9] px-3 py-2 text-sm font-medium hover:bg-[#F7F7F7]">Review</Link>
@@ -349,9 +366,10 @@ function DoctorDetail({ doctorId }: { doctorId: string }) {
                 {doctor.qualifications?.length ? (
                   <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-950">
                     {doctor.qualifications.map((qualification, index) => (
-                      <li key={`${qualification.qualification}-${qualification.institution}-${index}`}>
-                        {qualification.qualification} — {qualification.institution}
-                        {qualification.graduationYear ? ` (${qualification.graduationYear})` : ""}
+                      <li key={`${typeof qualification === "string" ? qualification : qualification.qualification}-${index}`}>
+                        {typeof qualification === "string"
+                          ? qualification
+                          : `${qualification.qualification} — ${qualification.institution}${qualification.graduationYear ? ` (${qualification.graduationYear})` : ""}`}
                       </li>
                     ))}
                   </ul>

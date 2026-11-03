@@ -151,6 +151,15 @@ test("doctor queue search filters supported application details on the current p
   ];
   assert.deepEqual(filterDoctorApplications(doctors, "  REG-12345 "), [doctors[0]]);
   assert.deepEqual(filterDoctorApplications(doctors, "north college"), [doctors[1]]);
+  const hospitalApplication = doctorApplication({
+    id: "hospital-doctor",
+    email: "doctor@north-hospital.example",
+    organizationName: "North Hospital",
+    qualifications: ["MBBS", "MD"],
+  });
+  assert.deepEqual(filterDoctorApplications([hospitalApplication], "north hospital"), [hospitalApplication]);
+  assert.deepEqual(filterDoctorApplications([hospitalApplication], "doctor@north"), [hospitalApplication]);
+  assert.deepEqual(filterDoctorApplications([hospitalApplication], "mbbs"), [hospitalApplication]);
   assert.deepEqual(filterDoctorApplications(doctors, ""), doctors);
 });
 
@@ -217,7 +226,7 @@ test("doctor detail view model includes the backend application, availability, a
     currency: "INR",
     reviewNote: "Please clarify the registration details.",
   }));
-  assert.ok(sections.personal.some(({ label, value }) => label === "Professional email" && value === "doctor@example.test"));
+  assert.ok(sections.personal.some(({ label, value }) => label === "Email" && value === "doctor@example.test"));
   assert.ok(sections.registration.some(({ label, value }) => label === "Issuing medical council" && value === "State Medical Council"));
   assert.ok(sections.specialties.some(({ label, value }) => label === "Additional specialties" && value === "Internal Medicine"));
   assert.ok(sections.clinic.some(({ label, value }) => label === "Clinic / hospital name" && value === "Fitness Clinic"));

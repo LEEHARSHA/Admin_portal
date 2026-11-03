@@ -17,7 +17,7 @@ export const doctorStatuses = [
 export type DoctorStatus = (typeof doctorStatuses)[number];
 export type DoctorReviewStatus = "approved" | "rejected" | "changes_requested" | "suspended";
 
-export type DoctorQualification = {
+export type DoctorQualification = string | {
   qualification: string;
   institution: string;
   graduationYear?: number;
@@ -33,6 +33,7 @@ export type DoctorReviewHistoryEntry = {
 export type DoctorApplication = {
   id: string;
   fullName: string;
+  email?: string | null;
   profilePhotoUrl?: string | null;
   professionalEmail?: string | null;
   phone?: string;
@@ -66,6 +67,10 @@ export type DoctorApplication = {
   approvedAt?: string | Date | null;
   suspendedAt?: string | Date | null;
   reviewHistory?: DoctorReviewHistoryEntry[];
+  source?: "individual" | "hospital";
+  organizationName?: string | null;
+  organizationVerificationStatus?: string;
+  accountStatus?: "active" | "inactive";
 };
 
 export type DoctorReviewAction = {
@@ -149,13 +154,17 @@ export function filterDoctorApplications(
   return applications.filter((application) => {
     const searchable = [
       application.fullName,
+      application.professionalEmail,
+      application.email,
       application.primarySpecialty,
       application.medicalRegistrationNumber,
       application.clinicName,
-      ...(application.qualifications || []).flatMap(({ qualification, institution }) => [
-        qualification,
-        institution,
-      ]),
+      application.organizationName,
+      ...(application.qualifications || []).flatMap((qualification) => (
+        typeof qualification === "string"
+          ? [qualification]
+          : [qualification.qualification, qualification.institution]
+      )),
     ].filter(Boolean).join(" ").toLocaleLowerCase();
     return searchable.includes(normalizedQuery);
   });
@@ -199,8 +208,10 @@ export function doctorDetailSections(doctor: DoctorApplication) {
   return {
     personal: [
       { label: "Full name", value: doctor.fullName },
+      { label: "Source", value: doctor.source === "hospital" ? "Hospital/Clinic" : "Individual" },
+      { label: "Account status", value: doctor.accountStatus === "active" ? "Active" : doctor.accountStatus === "inactive" ? "Inactive" : undefined },
       { label: "Profile photo URL", value: doctor.profilePhotoUrl },
-      { label: "Professional email", value: doctor.professionalEmail },
+      { label: "Email", value: doctor.professionalEmail || doctor.email },
       { label: "Phone", value: doctor.phone },
       { label: "Application created", value: formatDoctorDate(doctor.createdAt) },
       { label: "Submitted", value: formatDoctorDate(doctor.submittedAt) },
@@ -217,6 +228,8 @@ export function doctorDetailSections(doctor: DoctorApplication) {
     ],
     clinic: [
       { label: "Clinic / hospital name", value: doctor.clinicName },
+      { label: "Organization name", value: doctor.organizationName },
+      { label: "Organization verification status", value: doctor.organizationVerificationStatus },
       { label: "Address", value: doctor.clinicAddress },
       { label: "City", value: doctor.city },
       { label: "State", value: doctor.state },
